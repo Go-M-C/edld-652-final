@@ -1,0 +1,61 @@
+---
+title: "EDLD_652_Final_Project"
+author: "Michelle Cui"
+date: "2025-01-27"
+output: 
+  html_document:
+    code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      eval = TRUE,
+                      message = FALSE,
+                      warning = FALSE)
+```
+
+
+```{r}
+# loading packages
+library(here)
+library(rio)
+library(tidyverse)
+library(janitor)
+library(haven)
+```
+
+```{r}
+# read in data
+mergedtp <- load(here("data","MERGEDTP.Rdata"))
+mergedtp <- MERGEDTP
+```
+
+```{r}
+# Select variables for RQ1
+rq1 <- mergedtp %>% 
+  clean_names() %>% 
+  select(idteach,cntry,year,partt,it2g14a,it2g05a, it2g05b, ii2g11f) %>% 
+  rename(`Teacher ID` = idteach,
+         `Country ID` = cntry,
+         `Year of Response` = year,
+         `Teacher Participation` = partt,
+         `School Consider ICT a Priority` =it2g14a,
+         `ICT Use During Lesson` = it2g05a,
+        ` ICT Prepare Before Lesson` = it2g05b,
+        `ICT Self-support` = ii2g11f)
+
+colnames(rq1)
+
+# str(rq1)
+sum(is.na(rq1))
+
+```
+
+```{r}
+# Convert variable for RQ1
+rq1$`Teacher Participation` <- factor(as.numeric(rq1$`Teacher Participation`),
+              levels = c(1,2,3),
+              labels = c("Participated in both cycles", "Only participated in 2018", "Only participated in 2020"))
+
+```
+
