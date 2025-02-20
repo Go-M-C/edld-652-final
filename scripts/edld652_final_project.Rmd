@@ -26,7 +26,7 @@ library(haven)
 
 ```{r}
 # read in data
-mergedtp <- load(here("data","MERGEDTP.Rdata"))
+load(here("data","MERGEDTP.Rdata"))
 mergedtp <- MERGEDTP
 ```
 
