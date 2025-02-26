@@ -22,6 +22,10 @@ library(rio)
 library(tidyverse)
 library(janitor)
 library(haven)
+library(dplyr)
+library(gt)
+library(colorblindr)
+theme_set(theme_minimal(base_family = "Times"))
 ```
 
 ```{r}
@@ -31,31 +35,94 @@ mergedtp <- MERGEDTP
 ```
 
 ```{r}
+# Data cleaning
 # Select variables for RQ1
 rq1 <- mergedtp %>% 
   clean_names() %>% 
-  select(idteach,cntry,year,partt,it2g14a,it2g05a, it2g05b, ii2g11f) %>% 
-  rename(`Teacher ID` = idteach,
-         `Country ID` = cntry,
-         `Year of Response` = year,
-         `Teacher Participation` = partt,
-         `School Consider ICT a Priority` =it2g14a,
-         `ICT Use During Lesson` = it2g05a,
-        ` ICT Prepare Before Lesson` = it2g05b,
-        `ICT Self-support` = ii2g11f)
-
-colnames(rq1)
+  select(idteach,cntry,year,partt,it2g14a,it2g05a, it2g05b, ii2g11f)
+#  rename(`Teacher ID` = idteach,
+         # `Country ID` = cntry,
+         # `Year of Response` = year,
+         # `Teacher Participation` = partt,
+         # `School Consider ICT a Priority` =it2g14a,
+         # `ICT Use During Lesson` = it2g05a,
+         # `ICT Prepare Before Lesson` = it2g05b,
+         # `ICT Self-support` = ii2g11f)
 
 # str(rq1)
 sum(is.na(rq1))
+colSums(is.na(rq1))
+
+# Drop rows where Teacher ID and participation are missing
+rq1_clean <- rq1 %>% 
+  filter(!is.na(idteach) &!is.na(partt))
 
 ```
 
 ```{r}
-# Convert variable for RQ1
-rq1$`Teacher Participation` <- factor(as.numeric(rq1$`Teacher Participation`),
-              levels = c(1,2,3),
-              labels = c("Participated in both cycles", "Only participated in 2018", "Only participated in 2020"))
+# Basic table of missing values
+rq1_missing <- rq1_clean %>% 
+  select(-c(1:4)) %>% 
+  summarise(across(everything(), ~sum(is.na(.)))) %>% 
+  rename(`School Consider ICT a Priority`=it2g14a,
+         `ICT Use During Lesson` = it2g05a,
+         `ICT Prepare Before Lesson` = it2g05b,
+         `ICT Self-support` = ii2g11f) %>% 
+  pivot_longer(everything(), 
+               names_to = "Variable", 
+               values_to = "Missing_Values")
 
+rq1_missing %>% 
+  gt() %>% 
+  tab_header(
+    title = "Table 1. Missing values in key ICT related variables",
+    subtitle = "Insights into digital infrastructure and support disparities"
+  )
+```
+
+```{r}
+# Summary statistics
+
+rq1_clean$it2g14a <- factor(rq1_clean$it2g14a,
+                            levels = c(1,2,3,4),
+                            labels = c("Strongly agree",
+                                       "Agree",
+                                       "Disagree",
+                                       "Strongly disagree"))
+
+rq1_clean$it2g05a <- factor(rq1_clean$it2g05a,
+                            levels = c(1,2,3,4),
+                            labels = c("Never", "Less than two years", "Between two and five years", "More than five years"))
+
+rq1_clean$it2g05b <- factor(rq1_clean$it2g05b,
+                            levels = c(1,2,3,4),
+                            labels = c("Never", "Less than two years", "Between two and five years", "More than five years"))
+
+rq1_clean %>% 
+  select(-c(1)) %>% 
+  group_by(it2g14a) %>% 
+  summarise(Mean_ICT_Lesson = mean(it2g05a, na.rm = TRUE),
+            Mean_ICT_Prep = mean(it2g05b, na.rm = TRUE),
+            Count = n())
+
+table(rq1_clean$it2g14a)
+
+```
+
+QR1: Visualization
+
+```{r}
+rq1_clean <- filter(rq1_clean, !is.na(it2g14a)&!is.na(it2g05a))
+
+ggplot(data = rq1_clean, aes(x = it2g05a, fill= it2g14a)) +
+  geom_bar(position = "dodge")+
+  facet_wrap(~cntry)+
+  labs(title = "Figure 1. Frequency of ICT Use during lessons by School ICT Priority across countries",
+       x = "ICT Use During Lessons",
+       y = "Count",
+       fill = "School ICT Priority")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  scale_fill_OkabeIto()
+  
 ```
 
